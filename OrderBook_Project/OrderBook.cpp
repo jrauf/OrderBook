@@ -20,7 +20,7 @@
 #include <tuple>
 #include <format>
 
-enum class OrderType { 
+enum class OrderType {
     GoodTillCancel,
     FillAndKill
 };
@@ -123,13 +123,55 @@ class OrderModify {
         Quantity quantity_;
 };
 
+//what happens when an order is matched? create trades (bids and asks)
+struct TradeInfo {
+    OrderId orderId_;
+    Price price_;
+    Quantity quantity_;
+};
 
+class Trade { // trade class (bids and asks)
+    public:
+        Trade(const TradeInfo& bidTrade, const TradeInfo& askTrade)
+        : bidTrade_ (bidTrade),
+        askTrade_ (askTrade)
+        { }
 
+    const TradeInfo& GetBidTrade() const { return bidTrade_;}
+    const TradeInfo& GetAskTrade() const { return askTrade_;}
+
+    private:
+    TradeInfo bidTrade_;
+    TradeInfo askTrade_;
+};
+
+using Trades = std::vector<Trade>; //vector containing multiple trades to sweep and execute at once
+
+class OrderBook {
+    private:
+
+        struct OrderEntry {
+            OrderPointer order_ { nullptr };
+            OrderPointers::iterator location_;
+        };
+
+        /*future consideration to use unordered maps instead to make thread-safe and prevent data races
+         */
+        std::map<Price, OrderPointers, std::greater<Price>> bids_;
+        std::map<Price, OrderPointers, std::less<Price>> asks_;
+        std::unordered_map<OrderId, OrderEntry> orders_;
+
+        bool CanMatch(Side side, Price price) const {
+            if (asks_.empty()) {
+                return false;
+
+                const auto& [bestAsk_, _] = *asks_.begin();
+                return price >= bestAsk_;
+            }
+        }
+};
 
 int main() {
 
     return 0;
 }
-
-
-
